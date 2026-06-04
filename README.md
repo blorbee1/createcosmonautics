@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="title_logo.png" alt="Create Cosmonautics" width="1024">
+</p>
+
 ## About
 Create Cosmonautics expands Create Aeronautics to add space travel through player built rocket ships and physics using Sable. It gives you all the engineering tools to build a rocket, it's up to you to keep it alive in space.
 
