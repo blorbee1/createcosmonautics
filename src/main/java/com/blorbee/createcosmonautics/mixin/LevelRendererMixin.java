@@ -1,6 +1,8 @@
 package com.blorbee.createcosmonautics.mixin;
 
+import com.blorbee.createcosmonautics.CreateCosmonautics;
 import com.blorbee.createcosmonautics.system.orbit.OrbitTransitionTracker;
+import com.blorbee.createcosmonautics.system.orbit.OrbitVisualRenderer;
 import com.blorbee.createcosmonautics.system.planet.PlanetRegistry;
 import com.blorbee.createcosmonautics.system.planet.definition.PlanetDefinition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -12,6 +14,7 @@ import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -22,6 +25,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
+    private static final ResourceLocation WHITE_SUN_LOCATION = CreateCosmonautics.path("textures/environment/white_sun.png");
+
     @Shadow
     private void renderSnowAndRain(LightTexture pLightTexture, float pPartialTick, double pCamX, double pCamY, double pCamZ) {}
 
@@ -112,6 +117,37 @@ public abstract class LevelRendererMixin {
         float[] faded = color.clone();
         faded[3] *= 1.0f - progress;
         return faded;
+    }
+
+    @WrapOperation(
+        method = "renderSky",
+        at = @At(value = "INVOKE",
+            target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderTexture(ILnet/minecraft/resources/ResourceLocation;)V",
+            ordinal = 0)
+    )
+    private void cosmonautics$replaceSunTexture(int unit, ResourceLocation texture, Operation<Void> original) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null) {
+            original.call(unit, texture);
+            return;
+        }
+
+        CompoundTag data = mc.player.getPersistentData();
+        OrbitTransitionTracker tracker = OrbitTransitionTracker.fromEntityTag(data);
+
+        float progress = tracker.getTransitionProgress();
+        if (progress <= 0.5f) {
+            original.call(unit, texture);
+            return;
+        }
+
+        PlanetDefinition planet = PlanetRegistry.forLevel(mc.level).orElse(null);
+        if (planet == null || !planet.hasOrbitTransition()) {
+            original.call(unit, texture);
+            return;
+        }
+
+        original.call(unit, WHITE_SUN_LOCATION);
     }
 
     @Redirect(

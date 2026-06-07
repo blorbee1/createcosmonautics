@@ -30,18 +30,13 @@ import java.util.Random;
 
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(modid = CreateCosmonautics.MOD_ID, value = Dist.CLIENT)
-final class OrbitVisualRenderer {
+public final class OrbitVisualRenderer {
     private static final float SKYBOX_DISTANCE = 100f;
     private static final int CLOUD_COLOR_BGR = 0xEDEDED;
     private static final long CLOUD_CYCLE_TIME_MS = 180_000L;
 
     private static final Map<ResourceLocation, ResourceLocation> PLANET_TEX_CACHE = new HashMap<>();
-    private static final Map<ResourceLocation, DynamicTexture> PLANET_TEX_OBJS = new HashMap<>();
-
-    private static DynamicTexture CLOUD_TEXTURE = null;
     private static ResourceLocation CLOUD_TEX_ID = null;
-
-    private static DynamicTexture GLOW_TEXTURE = null;
     private static ResourceLocation GLOW_TEX_ID = null;
 
     private static RenderedStar[] STARS = null;
@@ -333,7 +328,6 @@ final class OrbitVisualRenderer {
         image.close();
 
         PLANET_TEX_CACHE.put(dimId, id);
-        PLANET_TEX_OBJS.put(id, tex);
         return id;
     }
 
@@ -512,9 +506,9 @@ final class OrbitVisualRenderer {
             }
         }
 
-        CLOUD_TEXTURE = new DynamicTexture(image);
-        CLOUD_TEX_ID = mc.getTextureManager().register(CreateCosmonautics.MOD_ID + ".clouds", CLOUD_TEXTURE);
-        CLOUD_TEXTURE.setFilter(false, false);
+        DynamicTexture cloudTexture = new DynamicTexture(image);
+        CLOUD_TEX_ID = mc.getTextureManager().register(CreateCosmonautics.MOD_ID + ".clouds", cloudTexture);
+        cloudTexture.setFilter(false, false);
         image.close();
     }
 
@@ -557,8 +551,8 @@ final class OrbitVisualRenderer {
             }
         }
 
-        GLOW_TEXTURE = new DynamicTexture(image);
-        GLOW_TEX_ID = mc.getTextureManager().register(CreateCosmonautics.MOD_ID + ".planet_glow", GLOW_TEXTURE);
+        DynamicTexture glowTexture = new DynamicTexture(image);
+        GLOW_TEX_ID = mc.getTextureManager().register(CreateCosmonautics.MOD_ID + ".planet_glow", glowTexture);
         image.close();
     }
 
