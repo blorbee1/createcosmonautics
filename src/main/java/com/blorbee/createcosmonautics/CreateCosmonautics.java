@@ -43,6 +43,7 @@ public class CreateCosmonautics implements OrbitCallbacks.OrbitZoneChangeListene
 
         modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.getSpec());
 
+        CosmoStarSystems.register();
         CosmoPlanets.register();
         CosmoBlocks.register();
         CosmoBlockEntityTypes.register();

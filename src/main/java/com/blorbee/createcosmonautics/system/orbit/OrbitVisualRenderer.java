@@ -3,6 +3,7 @@ package com.blorbee.createcosmonautics.system.orbit;
 import com.blorbee.createcosmonautics.CreateCosmonautics;
 import com.blorbee.createcosmonautics.system.planet.PlanetRegistry;
 import com.blorbee.createcosmonautics.system.planet.definition.PlanetDefinition;
+import com.blorbee.createcosmonautics.system.planet.definition.PlanetRendererDefinition;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -23,6 +24,8 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import org.joml.Matrix4f;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 @OnlyIn(Dist.CLIENT)
@@ -32,8 +35,8 @@ final class OrbitVisualRenderer {
     private static final int CLOUD_COLOR_BGR = 0xEDEDED;
     private static final long CLOUD_CYCLE_TIME_MS = 180_000L;
 
-    private static DynamicTexture PLANET_TEXUTRE = null;
-    private static ResourceLocation PLANET_TEX_ID = null;
+    private static final Map<ResourceLocation, ResourceLocation> PLANET_TEX_CACHE = new HashMap<>();
+    private static final Map<ResourceLocation, DynamicTexture> PLANET_TEX_OBJS = new HashMap<>();
 
     private static DynamicTexture CLOUD_TEXTURE = null;
     private static ResourceLocation CLOUD_TEX_ID = null;
@@ -42,8 +45,6 @@ final class OrbitVisualRenderer {
     private static ResourceLocation GLOW_TEX_ID = null;
 
     private static RenderedStar[] STARS = null;
-
-    private static final Random rand = new Random(13374242L);
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -71,7 +72,6 @@ final class OrbitVisualRenderer {
         if (camY < planet.orbitTransitionStartY())
             return;
 
-        ensurePlanetTexture();
         ensureCloudTexture();
         ensureGlowTexture();
         ensureStars();
@@ -83,7 +83,7 @@ final class OrbitVisualRenderer {
         float celestialAngle = mc.level.getTimeOfDay(event.getPartialTick().getGameTimeDeltaTicks());
 
         drawOrbitStars(poseStack, visibility, celestialAngle);
-        drawPlanetTexture(camera.getPosition().x, camY, camera.getPosition().z, poseStack.last().pose(), visibility, celestialAngle);
+        drawPlanetTexture(planet, camY, poseStack.last().pose(), visibility, celestialAngle);
 
         poseStack.popPose();
     }
@@ -132,7 +132,7 @@ final class OrbitVisualRenderer {
         event.setCanceled(true);
     }
 
-    private static void drawPlanetTexture(double camX, double camY, double camZ, Matrix4f matrix, float visibility, float celestialAngle) {
+    private static void drawPlanetTexture(PlanetDefinition planet, double camY, Matrix4f matrix, float visibility, float celestialAngle) {
         double quadWorldSize = camY * 2.0;
 
         float parallaxFactor = (float) (SKYBOX_DISTANCE / Math.max(1.0, quadWorldSize));
@@ -151,7 +151,7 @@ final class OrbitVisualRenderer {
 
         Tesselator tess = Tesselator.getInstance();
 
-        RenderSystem.setShaderTexture(0, PLANET_TEX_ID);
+        RenderSystem.setShaderTexture(0, getPlanetTextureId(planet));
         BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         buf.addVertex(matrix, relX - size, relY, relZ - size).setUv(0f, 0f).setColor(1f, 1f, 1f, visibility);
         buf.addVertex(matrix, relX - size, relY, relZ + size).setUv(0f, 1f).setColor(1f, 1f, 1f, visibility);
@@ -159,7 +159,7 @@ final class OrbitVisualRenderer {
         buf.addVertex(matrix, relX + size, relY, relZ - size).setUv(1f, 0f).setColor(1f, 1f, 1f, visibility);
         BufferUploader.drawWithShader(buf.buildOrThrow());
 
-        if (CLOUD_TEX_ID != null) {
+        if (planet.renderClouds() && CLOUD_TEX_ID != null) {
             RenderSystem.setShaderTexture(0, CLOUD_TEX_ID);
             float timeOffset = (System.currentTimeMillis() % CLOUD_CYCLE_TIME_MS) / (float) CLOUD_CYCLE_TIME_MS;
 
@@ -317,24 +317,27 @@ final class OrbitVisualRenderer {
         RenderSystem.disableBlend();
     }
 
-    private static void ensurePlanetTexture() {
-        if (PLANET_TEX_ID != null)
-            return;
+    private static ResourceLocation getPlanetTextureId(PlanetDefinition planet) {
+        ResourceLocation dimId = planet.dimensionId();
+        if (PLANET_TEX_CACHE.containsKey(dimId))
+            return PLANET_TEX_CACHE.get(dimId);
 
         Minecraft mc = Minecraft.getInstance();
+        byte[] biomeData = generateBiomeData(256);
+        NativeImage image = composePlanetTexture(256, biomeData, planet.planetRender());
 
-        int renderDataSize = 256;
-        byte[] biomeData = generateBiomeData(renderDataSize);
-
-        NativeImage image = composePlanetTexture(renderDataSize, biomeData);
-
-        PLANET_TEXUTRE = new DynamicTexture(image);
-        PLANET_TEX_ID = mc.getTextureManager().register(CreateCosmonautics.MOD_ID + ".planet", PLANET_TEXUTRE);
-        PLANET_TEXUTRE.setFilter(false, false);
+        DynamicTexture tex = new DynamicTexture(image);
+        String regName = CreateCosmonautics.MOD_ID + ".planet." + dimId.getNamespace() + "." + dimId.getPath();
+        ResourceLocation id = mc.getTextureManager().register(regName, tex);
+        tex.setFilter(false, false);
         image.close();
+
+        PLANET_TEX_CACHE.put(dimId, id);
+        PLANET_TEX_OBJS.put(id, tex);
+        return id;
     }
 
-    private static NativeImage composePlanetTexture(int renderDataSize, byte[] biomeData) {
+    private static NativeImage composePlanetTexture(int renderDataSize, byte[] biomeData, PlanetRendererDefinition palette) {
         int texSize = 512;
         int virtualSize = 128;
         int blockSize = texSize / virtualSize;
@@ -395,23 +398,14 @@ final class OrbitVisualRenderer {
             }
         }
 
-        // RGBA
-        int[][] palette = {
-            {30,  80, 180, 255},
-            {50, 120, 220, 255},
-            {200, 190, 130, 255},
-            {60, 140,  50, 255},
-            {40,  90,  30, 255},
-            {240, 240, 240, 255}
-        };
-
         for (int vy = 0; vy < virtualSize; vy++) {
             for (int vx = 0; vx < virtualSize; vx++) {
                 int biome = virtualBiomes[vx + vy * virtualSize] & 0xFF;
-                int r = palette[biome][0];
-                int g = palette[biome][1];
-                int b = palette[biome][2];
-                int a = palette[biome][3];
+                int[] col = palette.forBiome(biome);
+                int r = col[0];
+                int g = col[1];
+                int b = col[2];
+                int a = col[3];
 
                 boolean isWater = biome <= 1;
                 if (isWater) {
