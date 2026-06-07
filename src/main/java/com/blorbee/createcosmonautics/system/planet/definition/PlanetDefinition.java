@@ -4,8 +4,9 @@ import net.minecraft.resources.ResourceLocation;
 
 public record PlanetDefinition(
     ResourceLocation dimensionId,
-    OrbitTransitionDefinition transition,
-    CelestialVisualDefinition visuals,
-    SkyBehaviorDefinition sky,
-    AtmosphereBehaviorDefinition atmosphere
+    StarRenderDefinition starRender,
+    AtmosphereDefinition atmosphere,
+    boolean hasOrbitTransition,
+    float orbitTransitionStartY,
+    float orbitTransitionEndY
 ) {}

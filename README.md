@@ -17,6 +17,6 @@ This runs on [NeoForge](https://neoforged.net/) only, its dependencies are liste
 - [Sable](https://modrinth.com/mod/sable)
 
 **Supported Create versions:**
-| Create | Create Aeronautics | CAPG |
+| Create | Aeronautics | Cosmonautics |
 | :--- | :--- | :--- |
 | 6.0.9+ | 1.2.1 | 1.0.0 - latest |
