@@ -1,24 +1,24 @@
 package com.blorbee.createcosmonautics.registry;
 
 import com.blorbee.createcosmonautics.CreateCosmonautics;
+import com.simibubi.create.AllBlocks;
 import dev.simulated_team.simulated.registrate.SimulatedRegistrate;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Blocks;
 
 import java.util.function.Supplier;
 
 public final class CosmoCreativeTab {
-    // TODO: replace with own creative tab using the section rendering like aeronautics
-    private static final ResourceLocation SIMULATED_SECTION = ResourceLocation.fromNamespaceAndPath("simulated", "simulated");
+    private static final ResourceLocation SECTION_LOCATION = CreateCosmonautics.path("cosmonautics");
     private static boolean sectionsInitialized = false;
 
     public static synchronized void registerAeronauticsSections() {
         if (sectionsInitialized)
             return;
 
-//        registerSectionItem(SIMULATED_SECTION, CreateCosmonautics.path("physics_gantry_shaft"), CosmoBlocks.PHYSICS_GANTRY_SHAFT::asItem);
-//        registerSectionItem(SIMULATED_SECTION, CreateCosmonautics.path("physics_gantry_carriage"), CosmoBlocks.PHYSICS_GANTRY_CARRIAGE::asItem);
-//        registerSectionItem(SIMULATED_SECTION, CreateCosmonautics.path("belt_wheel"), CosmoBlocks.BELT_WHEEL::asItem);
+        // this is a placeholder
+        registerSectionItem(SECTION_LOCATION, ResourceLocation.fromNamespaceAndPath("create", "item_drain"), AllBlocks.ITEM_DRAIN::asItem);
 
         sectionsInitialized = true;
     }
