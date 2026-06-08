@@ -9,9 +9,16 @@
 ---
 
 <div align="center">
-    <a href="https://modrinth.com/mod/sable">
-        <img src="images/sable.png" alt="Powered by Sable">
-    </a>
+
+<a href="https://modrinth.com/mod/sable" style="display:inline-block;">
+    <img src="images/sable.png" alt="Powered by Sable">
+</a>
+
+<a href="https://www.youtube.com/channel/UCOpOy0lffFgQHmTu-8LtwoQ" style="display:inline-block; margin: 0 3px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/YouTube_play_button_square_%282013-2017%29.svg"
+         alt="Youtube Channel" width="44">
+</a>
+
 </div>
 
 ## About
